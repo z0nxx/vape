@@ -14,13 +14,12 @@ if humanoid.RigType ~= Enum.HumanoidRigType.R15 then
 end
 
 -- НАСТРОЙКИ СКОРОСТИ АНИМАЦИИ
-local VAPE_KEY = Enum.KeyCode.E
 local ARM_DURATION = 0.6    -- Time to move arm up or down
 local HOLD_DURATION = 0.5   -- Time to hold vape at mouth
 local SMOKE_DURATION = 3    -- Duration of smoke emission
 local FADE_TIME = 0.8       -- Time to fade smoke in/out
 local isAnimating = false
-local isScriptActive = true -- Флаг активности скрипта
+local isScriptActive = true
 
 local upperArm = character:WaitForChild("RightUpperArm")
 local lowerArm = character:WaitForChild("RightLowerArm")
@@ -37,7 +36,106 @@ local function lerp(a, b, t)
     return a + (b - a) * math.clamp(t, 0, 1)
 end
 
+-- Создание улучшенного GUI
+local function createGUI()
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "VapeGUI"
+    gui.Parent = player:WaitForChild("PlayerGui")
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 180, 0, 100)
+    frame.Position = UDim2.new(0.5, -90, 0.5, -50)
+    frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    frame.BorderSizePixel = 0
+    frame.Active = true
+    frame.Draggable = true
+    frame.Parent = gui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = frame
+    
+    -- Добавляем градиент
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 25, 25)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 40, 40))
+    })
+    gradient.Rotation = 45
+    gradient.Parent = frame
+    
+    -- Тень
+    local shadow = Instance.new("ImageLabel")
+    shadow.Size = UDim2.new(1, 20, 1, 20)
+    shadow.Position = UDim2.new(0, -10, 0, -10)
+    shadow.BackgroundTransparency = 1
+    shadow.Image = "rbxassetid://1316045217"
+    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+    shadow.ImageTransparency = 0.7
+    shadow.ScaleType = Enum.ScaleType.Slice
+    shadow.SliceCenter = Rect.new(10, 10, 118, 118)
+    shadow.Parent = frame
+    
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 30)
+    title.Position = UDim2.new(0, 0, 0, 5)
+    title.BackgroundTransparency = 1
+    title.Text = "Vape Control"
+    title.TextColor3 = Color3.fromRGB(0, 200, 255)
+    title.Font = Enum.Font.GothamBlack
+    title.TextSize = 18
+    title.TextStrokeTransparency = 0.8
+    title.Parent = frame
+    
+    local smokeButton = Instance.new("TextButton")
+    smokeButton.Size = UDim2.new(0, 140, 0, 45)
+    smokeButton.Position = UDim2.new(0.5, -70, 0, 45)
+    smokeButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    smokeButton.BorderSizePixel = 0
+    smokeButton.Text = "Курить"
+    smokeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    smokeButton.Font = Enum.Font.GothamBold
+    smokeButton.TextSize = 20
+    smokeButton.Parent = frame
+    
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 10)
+    buttonCorner.Parent = smokeButton
+    
+    -- Градиент для кнопки
+    local buttonGradient = Instance.new("UIGradient")
+    buttonGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 170, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 140, 220))
+    })
+    buttonGradient.Parent = smokeButton
+    
+    -- Эффекты при наведении
+    smokeButton.MouseEnter:Connect(function()
+        smokeButton:TweenSize(
+            UDim2.new(0, 145, 0, 48),
+            Enum.EasingDirection.Out,
+            Enum.EasingStyle.Quad,
+            0.2,
+            true
+        )
+    end)
+    
+    smokeButton.MouseLeave:Connect(function()
+        smokeButton:TweenSize(
+            UDim2.new(0, 140, 0, 45),
+            Enum.EasingDirection.Out,
+            Enum.EasingStyle.Quad,
+            0.2,
+            true
+        )
+    end)
+    
+    return gui, smokeButton
+end
+
 local function createVapeModel()
+    -- [Оставляем код создания вейп-модели без изменений]
     local vapeModel = Instance.new("Model")
     vapeModel.Name = "VapeModel"
 
@@ -111,6 +209,7 @@ local function createVapeModel()
 end
 
 local function createSmokeEffect()
+    -- [Оставляем код создания дыма без изменений]
     local attachment = Instance.new("Attachment")
     attachment.Name = "VapeAttachment"
     attachment.Parent = head
@@ -147,6 +246,7 @@ local function createSmokeEffect()
 end
 
 local function fadeSmoke(smoke, targetRate, duration)
+    -- [Оставляем код затухания дыма без изменений]
     local startRate = smoke.Rate
     local startTime = os.clock()
     
@@ -159,13 +259,13 @@ local function fadeSmoke(smoke, targetRate, duration)
 end
 
 local function animateToMouth(vapeModel)
+    -- [Оставляем код анимации без изменений]
     if not isScriptActive or isAnimating or not humanoid or humanoid.Health <= 0 then return end
     isAnimating = true
     
     local targetShoulderAngle = CFrame.Angles(math.rad(60), math.rad(65), 0)
     local targetElbowAngle = CFrame.Angles(math.rad(80), 0, 0)
     
-    -- Move arm to mouth
     local startTime = os.clock()
     while os.clock() - startTime < ARM_DURATION and humanoid.Health > 0 do
         local progress = lerp(0, 1, (os.clock() - startTime) / ARM_DURATION)
@@ -174,13 +274,11 @@ local function animateToMouth(vapeModel)
         RunService.Heartbeat:Wait()
     end
     
-    -- Hold at mouth
     local holdEndTime = os.clock() + HOLD_DURATION
     while os.clock() < holdEndTime and humanoid.Health > 0 do
         RunService.Heartbeat:Wait()
     end
     
-    -- Move arm back down
     startTime = os.clock()
     while os.clock() - startTime < ARM_DURATION and humanoid.Health > 0 do
         local progress = lerp(0, 1, (os.clock() - startTime) / ARM_DURATION)
@@ -189,51 +287,45 @@ local function animateToMouth(vapeModel)
         RunService.Heartbeat:Wait()
     end
     
-    -- Emit smoke after arm is down
     local smokeEffect, smokeAttachment = createSmokeEffect()
-    
-    -- Fade in smoke
     fadeSmoke(smokeEffect, 25, FADE_TIME)
     
-    -- Tilt head during smoke emission
     local smokeStartTime = os.clock()
     local smokeEndTime = smokeStartTime + SMOKE_DURATION
     while os.clock() < smokeEndTime and humanoid.Health > 0 do
         local progress = (os.clock() - smokeStartTime) / SMOKE_DURATION
-        local tiltProgress = math.sin(progress * math.pi)  -- Smooth tilt: 0 to 1 to 0
+        local tiltProgress = math.sin(progress * math.pi)
         neck.C0 = originalNeckC0:Lerp(originalNeckC0 * CFrame.Angles(math.rad(15), 0, 0), tiltProgress)
         RunService.Heartbeat:Wait()
     end
     
-    -- Fade out smoke
     fadeSmoke(smokeEffect, 0, FADE_TIME)
     task.wait(FADE_TIME)
     
     smokeEffect:Destroy()
     smokeAttachment:Destroy()
-    
-    -- Reset neck
     neck.C0 = originalNeckC0
     
     isAnimating = false
 end
 
 local currentVape = createVapeModel()
+local gui, smokeButton = createGUI()
 
--- Подключение ввода с проверкой активности
-local inputConnection = UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == VAPE_KEY and not isAnimating and isScriptActive then
+-- Подключение кнопки
+smokeButton.MouseButton1Click:Connect(function()
+    if not isAnimating and isScriptActive then
         animateToMouth(currentVape)
     end
 end)
 
--- Остановка скрипта при смерти
+-- Очистка при смерти
 humanoid.Died:Connect(function()
     if shoulder then shoulder.C0 = originalShoulderC0 end
     if elbow then elbow.C0 = originalElbowC0 end
     if neck then neck.C0 = originalNeckC0 end
     if currentVape then currentVape:Destroy() end
+    if gui then gui:Destroy() end
     isAnimating = false
-    isScriptActive = false -- Отключаем скрипт
-    inputConnection:Disconnect() -- Отключаем обработку ввода
+    isScriptActive = false
 end)
